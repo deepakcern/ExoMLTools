@@ -1,5 +1,5 @@
-
 ## following the instructions from https://betatim.github.io/posts/sklearn-for-TMVA-users/
+## https://matplotlib.org/tutorials/introductory/usage.html#sphx-glr-tutorials-introductory-usage-py
 import random
 
 import pandas as pd
@@ -28,6 +28,54 @@ from sklearn.ensemble import AdaBoostClassifier
 from sklearn.metrics import classification_report, roc_auc_score
 
 
+def signal_background(data1, data2, columnName="", grid=True,
+                      xlabel="", xlog=False, ylabel="",
+                      ylog=False, 
+                      sharey=False, figsize=None,
+                      layout=None, bins=10, **kwds):
+    
+    
+    ## check list of var is not empty 
+
+    ## get the var to be plotted 
+    
+    '''
+    if column is not None:
+        if not isinstance(column, (list, np.ndarray, Index)):
+            column = [column]
+        data1 = data1[column]
+        data2 = data2[column]
+        
+    data1 = data1._get_numeric_data()
+    data2 = data2._get_numeric_data()
+    naxes = len(data1.columns)
+
+    fig, axes = plotting._subplots(naxes=naxes, ax=ax, squeeze=False,
+                                   sharex=sharex,
+                                   sharey=sharey,
+                                   figsize=figsize,
+                                   layout=layout)
+    _axes = plotting._flatten(axes)
+    for i, col in enumerate(com._try_sort(data1.columns)):
+        ax = _axes[i]
+        low = min(data1[col].min(), data2[col].min())
+        high = max(data1[col].max(), data2[col].max())
+        ax.hist(data1[col].dropna().values,
+                bins=bins, range=(low,high), **kwds)
+        ax.hist(data2[col].dropna().values,
+                bins=bins, range=(low,high), **kwds)
+        ax.set_title(col)
+        ax.grid(grid)
+
+    plotting._set_ticks_props(axes, xlabelsize=xlabelsize, xrot=xrot,
+                              ylabelsize=ylabelsize, yrot=yrot)
+    fig.subplots_adjust(wspace=0.3, hspace=0.7)
+    plt.savefig('plots/antitop_comparison+.pdf')
+
+    return axes
+
+    '''
+
 def plot_ROC(bdt, X_train, y_train, type_="train"):
     import matplotlib.pyplot as plt
 
@@ -52,7 +100,7 @@ def plot_ROC(bdt, X_train, y_train, type_="train"):
     plt.savefig('plots/antitop_roc_'+type_+'.pdf')
     plt.close(fig)    
     
-def compare_train_test(clf, X_train, y_train, X_test, y_test, bins=30):
+def compare_train_test(clf, X_train, y_train, X_test, y_test, bins=25):
     import matplotlib.pyplot as plt
     
     decisions = []
@@ -102,9 +150,9 @@ def compare_train_test(clf, X_train, y_train, X_test, y_test, bins=30):
 ''' load data '''
 from root_pandas import read_root
 
-vars_to_load_ = ["M_Jet1AK8Jet","Jet1Eta","Jet1Pt","min_dPhi","isAK4jet1EtaMatch"]
+vars_to_load_ = ["M_Jet1AK8Jet","Jet1Eta","Jet1Pt","min_dPhi","isAK4jet1EtaMatch", "nJets"]
 signal_file_ = "/tmp/khurana/EXO-ggToXdXdHToBB_sinp_0p35_tanb_1p0_mXd_10_MH3_1200_MH4_150_MH2_1200_MHC_1200_CP3Tune_13TeV_0000_0.root"
-bkg_file_    = "/tmp/khurana/Merged_TopSemileptonic.root"
+bkg_file_    = "/tmp/khurana/Merged_TTSemileptonic.root"
 
 df_signal = read_root(signal_file_, 'monoHbb_SR_boosted', columns=vars_to_load_)
 df_bkg = read_root(bkg_file_, 'monoHbb_SR_boosted', columns=vars_to_load_)
@@ -114,6 +162,14 @@ df_bkg = read_root(bkg_file_, 'monoHbb_SR_boosted', columns=vars_to_load_)
 df_signal_skim = df_signal[ (df_signal.M_Jet1AK8Jet > 0.) ]
 df_bkg_skim = df_bkg[(df_bkg.M_Jet1AK8Jet > 0.)]
 
+
+
+signal_background(df_signal_skim, df_bkg_skim, 
+                  column=vars_to_load_,
+                  bins=20)
+
+
+print "size of the dataset", len(df_signal_skim), len(df_bkg_skim)
 #print df_signal_skim
 #print df_bkg_skim
 
@@ -139,7 +195,7 @@ y = np.concatenate((np.ones(df_signal_skim.shape[0]),
 
 
 X_dev,X_eval, y_dev,y_eval = train_test_split(X, y,
-                                              test_size=0.33, random_state=42)
+                                              test_size=0.01, random_state=42)
 
 X_train,X_test, y_train,y_test = train_test_split(X_dev, y_dev,
                                                   test_size=0.33, random_state=42)
@@ -147,13 +203,13 @@ X_train,X_test, y_train,y_test = train_test_split(X_dev, y_dev,
 
 
 ''' define model '''
-dt = DecisionTreeClassifier(max_depth=5,
-                            min_samples_leaf=0.05)#*len(X_train))
+dt = DecisionTreeClassifier(max_depth=3,
+                            min_samples_leaf=0.03)#*len(X_train))
 
 bdt = AdaBoostClassifier(dt,
                          algorithm='SAMME',
-                         n_estimators=300,
-                         learning_rate=0.1)
+                         n_estimators=600,
+                         learning_rate=0.01)
 
 
 ''' perform training ''' 
