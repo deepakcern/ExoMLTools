@@ -1,5 +1,6 @@
 ## following the instructions from https://betatim.github.io/posts/sklearn-for-TMVA-users/
 ## https://matplotlib.org/tutorials/introductory/usage.html#sphx-glr-tutorials-introductory-usage-py
+
 import random
 
 import pandas as pd
@@ -100,7 +101,7 @@ def plot_ROC(bdt, X_train, y_train, type_="train"):
     plt.savefig('plots/antitop_roc_'+type_+'.pdf')
     plt.close(fig)    
     
-def compare_train_test(clf, X_train, y_train, X_test, y_test, bins=25):
+def compare_train_test(clf, X_train, y_train, X_test, y_test,postfix="_2b", bins=25):
     import matplotlib.pyplot as plt
     
     decisions = []
@@ -135,14 +136,15 @@ def compare_train_test(clf, X_train, y_train, X_test, y_test, bins=25):
                               bins=bins, range=low_high, normed=True)
     scale = len(decisions[2]) / sum(hist)
     err = np.sqrt(hist * scale) / scale
-
+    
+    
     plt.errorbar(center, hist, yerr=err, fmt='o', c='b', label='B (test)')
 
     plt.xlabel("BDT output")
     plt.ylabel("Arbitrary units")
     plt.legend(loc='best')
-
-    plt.savefig('plots/antitop_bdt.pdf')
+    
+    plt.savefig("plots/antitop_bdt"+postfix+".pdf")
 
 
 
@@ -150,19 +152,22 @@ def compare_train_test(clf, X_train, y_train, X_test, y_test, bins=25):
 ''' load data '''
 from root_pandas import read_root
 
-vars_to_load_ = ["M_Jet1AK8Jet","Jet1Eta","Jet1Pt","min_dPhi","isAK4jet1EtaMatch", "nJets"]
-signal_file_ = "/tmp/khurana/EXO-ggToXdXdHToBB_sinp_0p35_tanb_1p0_mXd_10_MH3_1200_MH4_150_MH2_1200_MHC_1200_CP3Tune_13TeV_0000_0.root"
-bkg_file_    = "/tmp/khurana/Merged_TTSemileptonic.root"
+vars_to_load_ = ["MET", "dPhi_jetMET", "Jet1Pt", "Jet1Eta", "Jet1deepCSV", "Jet2Pt", "Jet2Eta", "Jet2deepCSV", "nPV", "pfpatCaloMETPt","pfTRKMETPt","delta_pfCalo","rJet1PtMET","ratioPtJet21","dPhiJet12","dEtaJet12" ]#, "Jet3Pt", "Jet3Eta", "Jet3deepCSV","nPV","isjet2EtaMatch"]
 
-df_signal = read_root(signal_file_, 'monoHbb_SR_boosted', columns=vars_to_load_)
-df_bkg = read_root(bkg_file_, 'monoHbb_SR_boosted', columns=vars_to_load_)
+signal_file_ = "merged_signal.root" #"signal_Ma250_MChi1_MA1200_tanb35_sint_0p7_MH_600_MHC_600.root"
+bkg_file_    = "merged_backgroud.root"# "tt_semileptonic.root"
 
+df_signal = read_root(signal_file_, 'bbDM_SR_2b', columns=vars_to_load_)
+
+df_bkg    = read_root(bkg_file_,    'bbDM_SR_2b', columns=vars_to_load_)
+print df_signal[:1]
 
 ''' skim the data '''
-df_signal_skim = df_signal[ (df_signal.M_Jet1AK8Jet > 0.) ]
-df_bkg_skim = df_bkg[(df_bkg.M_Jet1AK8Jet > 0.)]
+#df_signal_skim = df_signal[ (df_signal.M_Jet1AK8Jet > 0.) ]
+#df_bkg_skim = df_bkg[(df_bkg.M_Jet1AK8Jet > 0.)]
 
-
+df_signal_skim = df_signal
+df_bkg_skim =    df_bkg
 
 signal_background(df_signal_skim, df_bkg_skim, 
                   column=vars_to_load_,
@@ -209,7 +214,7 @@ dt = DecisionTreeClassifier(max_depth=3,
 bdt = AdaBoostClassifier(dt,
                          algorithm='SAMME',
                          n_estimators=600,
-                         learning_rate=0.01)
+                         learning_rate=0.05)
 
 
 ''' perform training ''' 
@@ -255,8 +260,12 @@ print "Area under ROC curve X_eval: %.4f"%(roc_auc_score(y_eval,
 ''' save trained model for future, i.e. applying to the analysis ''' 
 
 ''' going further: deeper ? ''' 
-plot_ROC(bdt, X_train, y_train, "train")
-plot_ROC(bdt, X_test, y_test, "test")
-plot_ROC(bdt, X_eval, y_eval, "eval")
+plot_ROC(bdt, X_train, y_train, "train_1b")
+plot_ROC(bdt, X_test, y_test, "test_1b")
+plot_ROC(bdt, X_eval, y_eval, "eval_1b")
 
-compare_train_test(bdt, X_train, y_train, X_test, y_test)
+compare_train_test(bdt, X_train, y_train, X_test, y_test,postfix="_1b")
+
+from pickle import dump, load
+dump(bdt, open('SR2b_discriminator_v0.pickle','wb')) 
+
