@@ -27,55 +27,31 @@ from sklearn.cross_validation import train_test_split
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.ensemble import AdaBoostClassifier
 from sklearn.metrics import classification_report, roc_auc_score
+from sklearn.utils import shuffle
+from glob import glob
 
+def plotFeature(df1,df2,invars,sample,nbins):
+    for var in invars:
+        data1 = df1[var]
+        data2 = df2[var]
+        mini = min([min(data1),min(data2)])
+        maxi = max([max(data1),max(data2)])
 
-def signal_background(data1, data2, columnName="", grid=True,
-                      xlabel="", xlog=False, ylabel="",
-                      ylog=False, 
-                      sharey=False, figsize=None,
-                      layout=None, bins=10, **kwds):
-    
-    
-    ## check list of var is not empty 
+        x=data1
+        y=data2
 
-    ## get the var to be plotted 
-    
-    '''
-    if column is not None:
-        if not isinstance(column, (list, np.ndarray, Index)):
-            column = [column]
-        data1 = data1[column]
-        data2 = data2[column]
+        bins = np.linspace(mini, maxi, nbins)
+        fig = plt.figure()
+        plt.hist(y, bins, alpha=0.5, label='B',density=True)
+        plt.hist(x, bins, alpha=0.5, label='S',density=True)
         
-    data1 = data1._get_numeric_data()
-    data2 = data2._get_numeric_data()
-    naxes = len(data1.columns)
+        plt.legend(loc='upper right')
+        plt.savefig('plots/feature_'+sample+'_'+var+'.pdf')
+        plt.savefig('plots/feature_'+sample+'_'+var+'.png')
+        
+        plt.close(fig)
 
-    fig, axes = plotting._subplots(naxes=naxes, ax=ax, squeeze=False,
-                                   sharex=sharex,
-                                   sharey=sharey,
-                                   figsize=figsize,
-                                   layout=layout)
-    _axes = plotting._flatten(axes)
-    for i, col in enumerate(com._try_sort(data1.columns)):
-        ax = _axes[i]
-        low = min(data1[col].min(), data2[col].min())
-        high = max(data1[col].max(), data2[col].max())
-        ax.hist(data1[col].dropna().values,
-                bins=bins, range=(low,high), **kwds)
-        ax.hist(data2[col].dropna().values,
-                bins=bins, range=(low,high), **kwds)
-        ax.set_title(col)
-        ax.grid(grid)
-
-    plotting._set_ticks_props(axes, xlabelsize=xlabelsize, xrot=xrot,
-                              ylabelsize=ylabelsize, yrot=yrot)
-    fig.subplots_adjust(wspace=0.3, hspace=0.7)
-    plt.savefig('plots/antitop_comparison+.pdf')
-
-    return axes
-
-    '''
+    
 
 def plot_ROC(bdt, X_train, y_train, type_="train"):
     import matplotlib.pyplot as plt
@@ -99,9 +75,10 @@ def plot_ROC(bdt, X_train, y_train, type_="train"):
     plt.grid()
     #plt.show()
     plt.savefig('plots/antitop_roc_'+type_+'.pdf')
+    plt.savefig('plots/antitop_roc_'+type_+'.png')
     plt.close(fig)    
     
-def compare_train_test(clf, X_train, y_train, X_test, y_test,postfix="_2b", bins=25):
+def compare_train_test(clf, X_train, y_train, X_test, y_test,postfix="_2b", bins=25): #bins=25
     import matplotlib.pyplot as plt
     
     decisions = []
@@ -145,6 +122,7 @@ def compare_train_test(clf, X_train, y_train, X_test, y_test,postfix="_2b", bins
     plt.legend(loc='best')
     
     plt.savefig("plots/antitop_bdt"+postfix+".pdf")
+    plt.savefig("plots/antitop_bdt"+postfix+".png")
 
 
 
@@ -152,27 +130,71 @@ def compare_train_test(clf, X_train, y_train, X_test, y_test,postfix="_2b", bins
 ''' load data '''
 from root_pandas import read_root
 
-vars_to_load_ = ["MET", "dPhi_jetMET", "Jet1Pt", "Jet1Eta", "Jet1deepCSV", "Jet2Pt", "Jet2Eta", "Jet2deepCSV", "nPV", "pfpatCaloMETPt","pfTRKMETPt","delta_pfCalo","rJet1PtMET","ratioPtJet21","dPhiJet12","dEtaJet12" ]#, "Jet3Pt", "Jet3Eta", "Jet3deepCSV","nPV","isjet2EtaMatch"]
+#vars_to_load_ = ["MET", "dPhi_jetMET", "Jet1Pt", "Jet1Eta", "Jet1deepCSV", "Jet2Pt", "Jet2Eta", "Jet2deepCSV", "nPV", "pfpatCaloMETPt","pfTRKMETPt","delta_pfCalo","rJet1PtMET","ratioPtJet21","dPhiJet12","dEtaJet12" ]#, "Jet3Pt", "Jet3Eta", "Jet3deepCSV","nPV","isjet2EtaMatch"]
+'''
+vars_to_load_ = ['MET','trkMET','trkMETPhi','METSig','Jet1Pt', 'Jet1Eta', 'Jet1Phi', 'Jet1CSV','Jet2Pt', 'Jet2Eta', 'Jet2Phi', 'Jet2CSV','DiJetMass','DiJetPt', 'DiJetEta','DiJetPhi','nJets','met_Phi']
+'''
+vars_to_load_ = ['MET','METSig','Jet1Pt', 'Jet1Eta', 'Jet1Phi', 'Jet1CSV','Jet2Pt', 'Jet2Eta', 'Jet2Phi', 'Jet2CSV','DiJetMass','DiJetPt', 'DiJetEta','DiJetPhi','nJets','met_Phi']
 
-signal_file_ = "merged_signal.root" #"signal_Ma250_MChi1_MA1200_tanb35_sint_0p7_MH_600_MHC_600.root"
-bkg_file_    = "merged_backgroud.root"# "tt_semileptonic.root"
+'''
+vars_to_load_ = ['MET','Jet1Pt', 'Jet1Eta', 'Jet1Phi', 'Jet1CSV','Jet2Pt', 'Jet2Eta', 'Jet2Phi', 'Jet2CSV','DiJetMass','DiJetPt', 'DiJetEta','DiJetPhi','nJets','met_Phi']
+'''
+'''
+vars_to_load_ = ['MET','Jet1Pt', 'Jet1Eta', 'Jet1Phi', 'Jet1CSV','Jet2Pt', 'Jet2Eta', 'Jet2Phi', 'Jet2CSV','DiJetMass','DiJetPt', 'DiJetEta','DiJetPhi','met_Phi']
+'''
+#signal_file_      = "Signal_2HDMa_ma250_mA600.root" #"signal_Ma250_MChi1_MA1200_tanb35_sint_0p7_MH_600_MHC_600.root"
+signal_file_       = glob('/eos/cms/store/group/phys_exotica/monoHiggs/monoHbb/2017_AnalyserOutput/monohbb.v12.07.00.2017_signal_merged/ggTomonoH_bb*')
+ttsembkg_file_     = "TTToSemiLeptonic.root"# "tt_semileptonic.root"
+Znunubkg_file_    = ["ZJetsToNuNu_HT-100To200_13TeV-madgraph.root",
+                     "ZJetsToNuNu_HT-1200To2500_13TeV-madgraph.root",
+                     "ZJetsToNuNu_HT-200To400_13TeV-madgraph.root",
+                     "ZJetsToNuNu_HT-2500ToInf_13TeV-madgraph.root",
+                     "ZJetsToNuNu_HT-400To600_13TeV-madgraph.root",
+                     "ZJetsToNuNu_HT-600To800_13TeV-madgraph.root",
+                     "ZJetsToNuNu_HT-800To1200_13TeV-madgraph.root"]
+WJetsbkg_file_    = ["WJetsToLNu_HT-100To200_TuneCP5_13TeV-madgraphMLM-pythia8.root",
+                     "WJetsToLNu_HT-1200To2500_TuneCP5_13TeV-madgraphMLM-pythia8.root",
+                     "WJetsToLNu_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8.root",
+                     "WJetsToLNu_HT-2500ToInf_TuneCP5_13TeV-madgraphMLM-pythia8.root",
+                     "WJetsToLNu_HT-400To600_TuneCP5_13TeV-madgraphMLM-pythia8.root",
+                     "WJetsToLNu_HT-600To800_TuneCP5_13TeV-madgraphMLM-pythia8.root",
+                     "WJetsToLNu_HT-800To1200_TuneCP5_13TeV-madgraphMLM-pythia8.root"]
 
-df_signal = read_root(signal_file_, 'bbDM_SR_2b', columns=vars_to_load_)
 
-df_bkg    = read_root(bkg_file_,    'bbDM_SR_2b', columns=vars_to_load_)
-print df_signal[:1]
+df_signal   = read_root(signal_file_,      'monoHbb_SR_resolved', columns=vars_to_load_)
 
+#df_bkg      = read_root(bkg_file_,         'monoHbb_SR_resolved', columns=vars_to_load_)
+df_bkgttsem = read_root(ttsembkg_file_,    'monoHbb_SR_resolved', columns=vars_to_load_)
+df_bkgZnunu = read_root(Znunubkg_file_,    'monoHbb_SR_resolved', columns=vars_to_load_)
+df_bkgWJets = read_root(WJetsbkg_file_,    'monoHbb_SR_resolved', columns=vars_to_load_)
+
+df_bkg = np.concatenate((df_bkgttsem, df_bkgZnunu,df_bkgWJets))
+df_bkg = shuffle(df_bkg, random_state=0)
 ''' skim the data '''
-#df_signal_skim = df_signal[ (df_signal.M_Jet1AK8Jet > 0.) ]
-#df_bkg_skim = df_bkg[(df_bkg.M_Jet1AK8Jet > 0.)]
+#df_signal = df_signal[ (df_signal.nJets == 2) ]
+#df_bkg = df_bkg[(df_bkg.nJets == 2)]
 
+''' ADD extra coulumns '''
+
+#df_signal["weight0"] = (df_signal["nJets"]==0).astype(int)
+#df_signal["weight1"] = (df_signal["nJets"]==1).astype(int)
+#df_signal["weight2"] = (df_signal["nJets"]==2).astype(int)
+
+#df_bkg["weight0"] = (df_bkg["nJets"]==0).astype(int)
+#df_bkg["weight1"] = (df_bkg["nJets"]==1).astype(int)
+#df_bkg["weight2"] = (df_bkg["nJets"]==2).astype(int)
+
+#print df_signal[:1]
+#df_signal = df_signal.drop(["nJets"],axis = 1)
+#df_bkg = df_bkg.drop(["nJets"],axis = 1)
+
+print df_signal[:1]
 df_signal_skim = df_signal
 df_bkg_skim =    df_bkg
 
-signal_background(df_signal_skim, df_bkg_skim, 
-                  column=vars_to_load_,
-                  bins=20)
-
+#plotFeature(df_signal_skim, df_bkg_skim, vars_to_load_,sample="TTsemeliptonic",nbins=20)
+#plotFeature(df_signal_skim, df_bkgZnunu, vars_to_load_,sample="ZJetsToNuNu_HT400To600",nbins=20)
+#plotFeature(df_signal_skim, df_bkgWJets, vars_to_load_,sample="WJetsToLNu_HT600To800",nbins=20)
 
 print "size of the dataset", len(df_signal_skim), len(df_bkg_skim)
 #print df_signal_skim
@@ -180,13 +202,14 @@ print "size of the dataset", len(df_signal_skim), len(df_bkg_skim)
 
 # join signal and background sample into same dataset. 
 X = np.concatenate((df_signal_skim, df_bkg_skim))
+#Xprime = np.concatenate((df_signal_skim, df_bkgZnunu))
 #print X
 
 ## create a column with length = sum of length of signal and background, signal is 1 and background is 0
 y = np.concatenate((np.ones(df_signal_skim.shape[0]),
                     np.zeros(df_bkg_skim.shape[0])))
 
-
+#yprime=np.concatenate((np.ones(df_signal_skim.shape[0]),np.zeros(df_bkgZnunu.shape[0])))
 
 ''' plot data 1d '''
 
@@ -202,9 +225,14 @@ y = np.concatenate((np.ones(df_signal_skim.shape[0]),
 X_dev,X_eval, y_dev,y_eval = train_test_split(X, y,
                                               test_size=0.01, random_state=42)
 
+#Xprime_dev,Xprime_eval, yprime_dev,yprime_eval = train_test_split(Xprime, yprime,
+                                              #test_size=0.01, random_state=42)
+
 X_train,X_test, y_train,y_test = train_test_split(X_dev, y_dev,
                                                   test_size=0.33, random_state=42)
 
+#Xprime_train,Xprime_test, yprime_train,yprime_test = train_test_split(Xprime_dev, yprime_dev,
+                                                  #test_size=0.33, random_state=42)
 
 
 ''' define model '''
@@ -220,8 +248,27 @@ bdt = AdaBoostClassifier(dt,
 ''' perform training ''' 
 bdt.fit(X_train, y_train)
 
-print "training done "
+''' feasure importance'''
+importances = bdt.feature_importances_
+std = np.std([tree.feature_importances_ for tree in bdt.estimators_],
+             axis=0)
+indices = np.argsort(importances)[::-1]
 
+# Print the feature ranking
+print("Feature ranking:")
+print "X,shape[1]",X.shape[1]
+print "importances",importances
+print "Features",vars_to_load_
+for f in range(X.shape[1]):
+    print("%d. feature %d  (%s)   (%f)" % (f + 1, indices[f],vars_to_load_[indices[f]], importances[indices[f]]))
+    
+    
+
+print "training done "
+ZnunuTest=False
+if ZnunuTest:
+    X_eval=Xprime_eval; y_eval=yprime_eval
+    X_test=Xprime_test; y_test=yprime_test
 
 y_predicted = bdt.predict(X_test)
 print classification_report(y_test, y_predicted,
