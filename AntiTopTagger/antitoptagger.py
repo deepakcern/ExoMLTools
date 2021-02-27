@@ -1,5 +1,6 @@
 ## following the instructions from https://betatim.github.io/posts/sklearn-for-TMVA-users/
 ## https://matplotlib.org/tutorials/introductory/usage.html#sphx-glr-tutorials-introductory-usage-py
+## https://machinelearningmastery.com/adaboost-ensemble-in-python/
 
 import random
 
@@ -29,6 +30,33 @@ from sklearn.ensemble import AdaBoostClassifier
 from sklearn.metrics import classification_report, roc_auc_score
 from sklearn.utils import shuffle
 from glob import glob
+from sklearn.model_selection import RepeatedStratifiedKFold
+from sklearn.model_selection import GridSearchCV
+
+
+def OptimizeHyperparmeters(X,y):
+    print ("optimizing hyper parameters\n")
+    #DEFINE THE MODEL WITH DEFAULT HYPERMETERS
+    model = AdaBoostClassifier()
+    #DEFINE THE GRID OF VALUES TO SEARCH 
+    grid  = dict()
+    grid['n_estimators'] = [10, 50, 100, 500,800,1000]
+    grid['learning_rate'] = [0.0001, 0.001, 0.01, 0.1, 1.0]
+    #DEFINE THE EVALUATION PROCEDURE
+    cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=1)
+    #DEFINE THE GRID SEARCH PROCEDURE
+    grid_search = GridSearchCV(estimator=model, param_grid=grid, n_jobs=-1, cv=cv, scoring='accuracy')
+    #EXECUTE THE GRID SEARCH
+    grid_result = grid_search.fit(X, y)
+    #SUMMARIZE THE BEST SCORE AND CONFIGURATION
+    print("Best: %f using %s" % (grid_result.best_score_, grid_result.best_params_))
+    #SUMMARIZE ALL SCORES THAT WERE EVALUATED
+    means = grid_result.cv_results_['mean_test_score']
+    stds = grid_result.cv_results_['std_test_score']
+    params = grid_result.cv_results_['params']
+    for mean, stdev, param in zip(means, stds, params):
+        print("%f (%f) with: %r" % (mean, stdev, param))
+
 
 def plotFeature(df1,df2,invars,sample,nbins):
     for var in invars:
@@ -144,6 +172,17 @@ vars_to_load_ = ['MET','Jet1Pt', 'Jet1Eta', 'Jet1Phi', 'Jet1CSV','Jet2Pt', 'Jet2
 '''
 #signal_file_      = "Signal_2HDMa_ma250_mA600.root" #"signal_Ma250_MChi1_MA1200_tanb35_sint_0p7_MH_600_MHC_600.root"
 signal_file_       = glob('/eos/cms/store/group/phys_exotica/monoHiggs/monoHbb/2017_AnalyserOutput/monohbb.v12.07.00.2017_signal_merged/ggTomonoH_bb*')
+
+
+bkg_file            = glob('/eos/cms/store/group/phys_exotica/monoHiggs/monoHbb/2017_AnalyserOutput/monohbb.v12.07.00.2017_bkg/*.root')
+
+bkg_file = list(bkg_file)
+
+bkg_file_ = [samp for samp in bkg_file if not ("HToBB" in samp)]
+SMHbkg_file_ = [samp for samp in bkg_file if ("HToBB" in samp)]
+#print (SMHbkg_file_)
+
+'''
 ttsembkg_file_     = "TTToSemiLeptonic.root"# "tt_semileptonic.root"
 Znunubkg_file_    = ["ZJetsToNuNu_HT-100To200_13TeV-madgraph.root",
                      "ZJetsToNuNu_HT-1200To2500_13TeV-madgraph.root",
@@ -159,20 +198,33 @@ WJetsbkg_file_    = ["WJetsToLNu_HT-100To200_TuneCP5_13TeV-madgraphMLM-pythia8.r
                      "WJetsToLNu_HT-400To600_TuneCP5_13TeV-madgraphMLM-pythia8.root",
                      "WJetsToLNu_HT-600To800_TuneCP5_13TeV-madgraphMLM-pythia8.root",
                      "WJetsToLNu_HT-800To1200_TuneCP5_13TeV-madgraphMLM-pythia8.root"]
-
-
+'''
 df_signal   = read_root(signal_file_,      'monoHbb_SR_resolved', columns=vars_to_load_)
 
-#df_bkg      = read_root(bkg_file_,         'monoHbb_SR_resolved', columns=vars_to_load_)
+df_bkg_      = read_root(bkg_file_,         'monoHbb_SR_resolved', columns=vars_to_load_)
+
+#df_SMHbkg      = read_root(SMHbkg_file_,         'monoHbb_SR_resolved', columns=vars_to_load_)
+
+
+'''
 df_bkgttsem = read_root(ttsembkg_file_,    'monoHbb_SR_resolved', columns=vars_to_load_)
 df_bkgZnunu = read_root(Znunubkg_file_,    'monoHbb_SR_resolved', columns=vars_to_load_)
 df_bkgWJets = read_root(WJetsbkg_file_,    'monoHbb_SR_resolved', columns=vars_to_load_)
+'''
+df_signal = df_signal[ (df_signal.Jet1Pt > 0) ]
+df_bkg_   = df_bkg_[(df_bkg_.Jet1Pt > 0)]
+#df_SMHbkg = df_SMHbkg[df_SMHbkg.Jet1Pt>0]
 
-df_bkg = np.concatenate((df_bkgttsem, df_bkgZnunu,df_bkgWJets))
-df_bkg = shuffle(df_bkg, random_state=0)
+
+df_signal = shuffle(df_signal,random_state=0)
+#df_SMHbkg = shuffle(df_SMHbkg,random_state=0)
+
+#df_SMHbkg = df_SMHbkg[:2000]
+
+#df_allbkg = np.concatenate((df_bkg_, df_SMHbkg))
+#df_allbkg = shuffle(df_allbkg,random_state=0)
+df_bkg    = shuffle(df_bkg_, random_state=0)
 ''' skim the data '''
-#df_signal = df_signal[ (df_signal.nJets == 2) ]
-#df_bkg = df_bkg[(df_bkg.nJets == 2)]
 
 ''' ADD extra coulumns '''
 
@@ -195,21 +247,29 @@ df_bkg_skim =    df_bkg
 #plotFeature(df_signal_skim, df_bkg_skim, vars_to_load_,sample="TTsemeliptonic",nbins=20)
 #plotFeature(df_signal_skim, df_bkgZnunu, vars_to_load_,sample="ZJetsToNuNu_HT400To600",nbins=20)
 #plotFeature(df_signal_skim, df_bkgWJets, vars_to_load_,sample="WJetsToLNu_HT600To800",nbins=20)
-
+#if len(df_signal)>20000:
+print "original size of the dataset", len(df_signal_skim), len(df_bkg_skim)
+df_signal_skim = df_signal_skim[:15000]
+df_bkg_skim    = df_bkg_skim[:15000]
 print "size of the dataset", len(df_signal_skim), len(df_bkg_skim)
 #print df_signal_skim
 #print df_bkg_skim
 
 # join signal and background sample into same dataset. 
 X = np.concatenate((df_signal_skim, df_bkg_skim))
-#Xprime = np.concatenate((df_signal_skim, df_bkgZnunu))
+#Xprime = np.concatenate((df_signal_skim, df_allbkg))
 #print X
 
 ## create a column with length = sum of length of signal and background, signal is 1 and background is 0
 y = np.concatenate((np.ones(df_signal_skim.shape[0]),
                     np.zeros(df_bkg_skim.shape[0])))
 
-#yprime=np.concatenate((np.ones(df_signal_skim.shape[0]),np.zeros(df_bkgZnunu.shape[0])))
+#yprime=np.concatenate((np.ones(df_signal_skim.shape[0]),np.zeros(df_allbkg.shape[0])))
+
+'''
+OPTIMIZE OptimizeHyperparmeters
+'''
+#OptimizeHyperparmeters(X,y)
 
 ''' plot data 1d '''
 
@@ -241,8 +301,8 @@ dt = DecisionTreeClassifier(max_depth=3,
 
 bdt = AdaBoostClassifier(dt,
                          algorithm='SAMME',
-                         n_estimators=600,
-                         learning_rate=0.05)
+                         n_estimators=500,
+                         learning_rate=0.1)
 
 
 ''' perform training ''' 
@@ -265,8 +325,8 @@ for f in range(X.shape[1]):
     
 
 print "training done "
-ZnunuTest=False
-if ZnunuTest:
+TestOnmix=False
+if TestOnmix:
     X_eval=Xprime_eval; y_eval=yprime_eval
     X_test=Xprime_test; y_test=yprime_test
 
