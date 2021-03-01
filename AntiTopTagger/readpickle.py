@@ -6,7 +6,7 @@ def addbdtscore(infile,tree):
     ifile = open("discriminator_resolved.pickle")
     model = pickle.load(ifile)
 
-    vars_to_load_ = ['Jet2Eta', 'Jet1CSV', 'DiJetEta', 'Jet2Pt', 'Jet2Phi', 'Jet1Pt','DiJetMass', 'Jet1Phi', 'DiJetPhi', 'MET', 'METSig', 'met_Phi','nJets', 'DiJetPt', 'Jet2CSV', 'Jet1Eta'] 
+    vars_to_load_ = ['MET','METSig','Jet1Pt', 'Jet1Eta', 'Jet1Phi','Jet2Pt', 'Jet2Eta', 'Jet2Phi','DiJetMass','DiJetPt', 'DiJetEta','DiJetPhi','nJets','met_Phi']
     
     if not ("SR" in tree or "SBand" in tree):vars_to_load_[0]="RECOIL"
     df = read_root(infile,tree,columns=vars_to_load_)
