@@ -37,11 +37,13 @@ from sklearn.model_selection import GridSearchCV
 def OptimizeHyperparmeters(X,y):
     print ("optimizing hyper parameters\n")
     #DEFINE THE MODEL WITH DEFAULT HYPERMETERS
-    model = AdaBoostClassifier()
+    dt = DecisionTreeClassifier(max_depth=3,
+                            min_samples_leaf=0.03)
+    model = AdaBoostClassifier(dt)
     #DEFINE THE GRID OF VALUES TO SEARCH 
     grid  = dict()
-    grid['n_estimators'] = [10, 50, 100, 500,800,1000]
-    grid['learning_rate'] = [0.0001, 0.001, 0.01, 0.1, 1.0]
+    grid['n_estimators'] = [500]
+    grid['learning_rate'] = [0.01, 0.1]
     #DEFINE THE EVALUATION PROCEDURE
     cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=1)
     #DEFINE THE GRID SEARCH PROCEDURE
@@ -162,7 +164,7 @@ from root_pandas import read_root
 '''
 vars_to_load_ = ['MET','trkMET','trkMETPhi','METSig','Jet1Pt', 'Jet1Eta', 'Jet1Phi', 'Jet1CSV','Jet2Pt', 'Jet2Eta', 'Jet2Phi', 'Jet2CSV','DiJetMass','DiJetPt', 'DiJetEta','DiJetPhi','nJets','met_Phi']
 '''
-vars_to_load_ = ['MET','METSig','Jet1Pt', 'Jet1Eta', 'Jet1Phi', 'Jet1CSV','Jet2Pt', 'Jet2Eta', 'Jet2Phi', 'Jet2CSV','DiJetMass','DiJetPt', 'DiJetEta','DiJetPhi','nJets','met_Phi']
+vars_to_load_ = ['MET','METSig','Jet1Pt', 'Jet1Eta', 'Jet1Phi','Jet2Pt', 'Jet2Eta', 'Jet2Phi','DiJetMass','DiJetPt', 'DiJetEta','DiJetPhi','nJets','met_Phi']
 
 '''
 vars_to_load_ = ['MET','Jet1Pt', 'Jet1Eta', 'Jet1Phi', 'Jet1CSV','Jet2Pt', 'Jet2Eta', 'Jet2Phi', 'Jet2CSV','DiJetMass','DiJetPt', 'DiJetEta','DiJetPhi','nJets','met_Phi']
@@ -271,6 +273,7 @@ OPTIMIZE OptimizeHyperparmeters
 '''
 #OptimizeHyperparmeters(X,y)
 
+
 ''' plot data 1d '''
 
 
@@ -371,8 +374,8 @@ plot_ROC(bdt, X_train, y_train, "train_1b")
 plot_ROC(bdt, X_test, y_test, "test_1b")
 plot_ROC(bdt, X_eval, y_eval, "eval_1b")
 
-compare_train_test(bdt, X_train, y_train, X_test, y_test,postfix="_1b")
+compare_train_test(bdt, X_train, y_train, X_test, y_test,postfix="_resolved")
 
 from pickle import dump, load
-dump(bdt, open('SR2b_discriminator_v0.pickle','wb')) 
+dump(bdt, open('discriminator_resolved.pickle','wb')) 
 
