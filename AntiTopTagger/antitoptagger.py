@@ -168,7 +168,7 @@ vars_to_load_=['MET','METSig','Jet1Pt', 'Jet1Eta', 'Jet1Phi', 'Jet1CSV','Jet2Pt'
 #signal_file_       = glob('/eos/cms/store/group/phys_exotica/monoHiggs/monoHbb/2017_AnalyserOutput/monohbb.v12.07.01.2017_bdtTraning_v2_signal/ggTomonoH_bb*.root')
 signal_file_       = glob("/eos/cms/store/group/phys_exotica/monoHiggs/monoHbb/2017_AnalyserOutput/monohbb.v12.07.01.2017_bdtTraning_v2_signal/ZprimeToA0hToA0chichihbb*.root")
 
-bkg_file            = glob('/eos/cms/store/group/phys_exotica/monoHiggs/monoHbb/2017_AnalyserOutput/monohbb.v12.07.01.2017_bdtTraning_v2_merged/*TTTo*.root')
+bkg_file            = glob('/eos/cms/store/group/phys_exotica/monoHiggs/monoHbb/2017_AnalyserOutput/monohbb.v12.07.01.2017_bdtTraning_v2_merged/*.root')
 
 bkg_file = list(bkg_file)
 
