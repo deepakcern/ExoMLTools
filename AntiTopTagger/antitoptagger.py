@@ -39,15 +39,16 @@ def OptimizeHyperparmeters(X,y):
     #DEFINE THE MODEL WITH DEFAULT HYPERMETERS
     dt = DecisionTreeClassifier(max_depth=3,
                             min_samples_leaf=0.03)
-    model = AdaBoostClassifier(dt)
+    model = AdaBoostClassifier()
     #DEFINE THE GRID OF VALUES TO SEARCH 
     grid  = dict()
     grid['n_estimators'] = [500]
-    grid['learning_rate'] = [0.01, 0.1]
+    grid['learning_rate'] = [0.1]
     #DEFINE THE EVALUATION PROCEDURE
     cv = RepeatedStratifiedKFold(n_splits=10, n_repeats=3, random_state=1)
     #DEFINE THE GRID SEARCH PROCEDURE
-    grid_search = GridSearchCV(estimator=model, param_grid=grid, n_jobs=-1, cv=cv, scoring='accuracy')
+    #grid_search = GridSearchCV(estimator=model, param_grid=grid, n_jobs=-1, cv=cv, scoring='accuracy')
+    grid_search = GridSearchCV(estimator=model, param_grid=grid, n_jobs=-1, cv=cv, scoring='roc_auc')
     #EXECUTE THE GRID SEARCH
     grid_result = grid_search.fit(X, y)
     #SUMMARIZE THE BEST SCORE AND CONFIGURATION
@@ -160,23 +161,14 @@ def compare_train_test(clf, X_train, y_train, X_test, y_test,postfix="_2b", bins
 ''' load data '''
 from root_pandas import read_root
 
-#vars_to_load_ = ["MET", "dPhi_jetMET", "Jet1Pt", "Jet1Eta", "Jet1deepCSV", "Jet2Pt", "Jet2Eta", "Jet2deepCSV", "nPV", "pfpatCaloMETPt","pfTRKMETPt","delta_pfCalo","rJet1PtMET","ratioPtJet21","dPhiJet12","dEtaJet12" ]#, "Jet3Pt", "Jet3Eta", "Jet3deepCSV","nPV","isjet2EtaMatch"]
-'''
-vars_to_load_ = ['MET','trkMET','trkMETPhi','METSig','Jet1Pt', 'Jet1Eta', 'Jet1Phi', 'Jet1CSV','Jet2Pt', 'Jet2Eta', 'Jet2Phi', 'Jet2CSV','DiJetMass','DiJetPt', 'DiJetEta','DiJetPhi','nJets','met_Phi']
-'''
-vars_to_load_ = ['MET','METSig','Jet1Pt', 'Jet1Eta', 'Jet1Phi','Jet2Pt', 'Jet2Eta', 'Jet2Phi','DiJetMass','DiJetPt', 'DiJetEta','DiJetPhi','nJets','met_Phi']
+vars_to_load_=['MET','METSig','Jet1Pt', 'Jet1Eta', 'Jet1Phi', 'Jet1CSV','Jet2Pt', 'Jet2Eta', 'Jet2Phi', 'Jet2CSV','Jet3Pt', 'Jet3Eta', 'Jet3Phi', 'Jet3CSV','DiJetMass','DiJetPt', 'DiJetEta','DiJetPhi','nJets','met_Phi',"j1j2DR","j1j2Dphi","HT","hMETDphi","j1j3Dphi","j2j3Dphi","hj3Dphi","j1j4Dphi","j2j4Dphi","j3j4Dphi","hj4Dphi"]
+#vars_to_load_ = ['MET','METSig','Jet1Pt', 'Jet1Eta', 'Jet1Phi', 'Jet1CSV','Jet2Pt', 'Jet2Eta', 'Jet2Phi', 'Jet2CSV','DiJetMass','DiJetPt', 'DiJetEta','DiJetPhi','nJets','met_Phi']
 
-'''
-vars_to_load_ = ['MET','Jet1Pt', 'Jet1Eta', 'Jet1Phi', 'Jet1CSV','Jet2Pt', 'Jet2Eta', 'Jet2Phi', 'Jet2CSV','DiJetMass','DiJetPt', 'DiJetEta','DiJetPhi','nJets','met_Phi']
-'''
-'''
-vars_to_load_ = ['MET','Jet1Pt', 'Jet1Eta', 'Jet1Phi', 'Jet1CSV','Jet2Pt', 'Jet2Eta', 'Jet2Phi', 'Jet2CSV','DiJetMass','DiJetPt', 'DiJetEta','DiJetPhi','met_Phi']
-'''
 #signal_file_      = "Signal_2HDMa_ma250_mA600.root" #"signal_Ma250_MChi1_MA1200_tanb35_sint_0p7_MH_600_MHC_600.root"
-signal_file_       = glob('/eos/cms/store/group/phys_exotica/monoHiggs/monoHbb/2017_AnalyserOutput/monohbb.v12.07.00.2017_signal_merged/ggTomonoH_bb*')
+#signal_file_       = glob('/eos/cms/store/group/phys_exotica/monoHiggs/monoHbb/2017_AnalyserOutput/monohbb.v12.07.01.2017_bdtTraning_v2_signal/ggTomonoH_bb*.root')
+signal_file_       = glob("/eos/cms/store/group/phys_exotica/monoHiggs/monoHbb/2017_AnalyserOutput/monohbb.v12.07.01.2017_bdtTraning_v2_signal/ZprimeToA0hToA0chichihbb*.root")
 
-
-bkg_file            = glob('/eos/cms/store/group/phys_exotica/monoHiggs/monoHbb/2017_AnalyserOutput/monohbb.v12.07.00.2017_bkg/*.root')
+bkg_file            = glob('/eos/cms/store/group/phys_exotica/monoHiggs/monoHbb/2017_AnalyserOutput/monohbb.v12.07.01.2017_bdtTraning_v2_merged/*TTTo*.root')
 
 bkg_file = list(bkg_file)
 
@@ -246,13 +238,13 @@ print df_signal[:1]
 df_signal_skim = df_signal
 df_bkg_skim =    df_bkg
 
-#plotFeature(df_signal_skim, df_bkg_skim, vars_to_load_,sample="TTsemeliptonic",nbins=20)
+#plotFeature(df_signal_skim, df_bkg_skim, vars_to_load_,sample="fullbkg",nbins=20)
 #plotFeature(df_signal_skim, df_bkgZnunu, vars_to_load_,sample="ZJetsToNuNu_HT400To600",nbins=20)
 #plotFeature(df_signal_skim, df_bkgWJets, vars_to_load_,sample="WJetsToLNu_HT600To800",nbins=20)
 #if len(df_signal)>20000:
 print "original size of the dataset", len(df_signal_skim), len(df_bkg_skim)
-df_signal_skim = df_signal_skim[:15000]
-df_bkg_skim    = df_bkg_skim[:15000]
+df_signal_skim = df_signal_skim[:9000]
+df_bkg_skim    = df_bkg_skim[:9000]
 print "size of the dataset", len(df_signal_skim), len(df_bkg_skim)
 #print df_signal_skim
 #print df_bkg_skim
@@ -318,12 +310,16 @@ std = np.std([tree.feature_importances_ for tree in bdt.estimators_],
 indices = np.argsort(importances)[::-1]
 
 # Print the feature ranking
+#print "bdt.estimators_",bdt.estimators_
+print "std",std
 print("Feature ranking:")
 print "X,shape[1]",X.shape[1]
 print "importances",importances
-print "Features",vars_to_load_
+print "indices",indices
+columns_ = [ij for ij in df_bkg_skim.columns]
+print ("feasures   :",columns_)
 for f in range(X.shape[1]):
-    print("%d. feature %d  (%s)   (%f)" % (f + 1, indices[f],vars_to_load_[indices[f]], importances[indices[f]]))
+    print("%d. feature %d  (%s)   (%f)" % (f + 1, indices[f],columns_[indices[f]], importances[indices[f]]))
     
     
 
